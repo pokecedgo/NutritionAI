@@ -3,110 +3,169 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Chat and To-Do List App</title>
+    <title>SmartTaskAI</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <style>
         body {
-            font-family: Arial, sans-serif;
-            background-color: #f5f5f5;
-            margin: 0;
-            padding: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
+            background-color: #121212;
+            color: #e0e0e0;
         }
-        #container {
-            display: flex;
-            width: 80%;
-            height: 80%;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            border-radius: 10px;
-            overflow: hidden;
-        }
-        #chat, #todo {
-            width: 50%;
-            padding: 20px;
-            box-sizing: border-box;
+        .chat-container {
             display: flex;
             flex-direction: column;
+            max-width: 600px;
+            margin: 0 auto;
         }
-        #chat {
-            background-color: #ffffff;
-            border-right: 1px solid #ddd;
-        }
-        #todo {
-            background-color: #f9f9f9;
-        }
-        #messages {
-            flex-grow: 1;
-            overflow-y: auto;
+        .chat-bubble {
             padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            margin-bottom: 10px;
-            background-color: #f1f1f1;
+            border-radius: 20px; /* Increased roundness */
+            margin: 5px 0;
+            max-width: 80%;
+            word-wrap: break-word;
+        }
+        .user-message {
+            background-color: #1e88e5;
+            color: #fff;
+            align-self: flex-end;
+            border: 1px solid #ccc;
+            border-radius: 15px 15px 0 15px;
+        }
+        .ai-response {
+            background-color: #424242;
+            color: #fff;
+            align-self: flex-start;
+            border: 1px solid #ccc;
+            border-radius: 15px 15px 15px 0;
         }
         .message {
             margin: 10px 0;
         }
-        .user {
-            color: blue;
-        }
-        .ai {
-            color: green;
-        }
-        #todo-list {
-            flex-grow: 1;
-            overflow-y: auto;
+        #navbar a {
+            color: #e0e0e0;
+            text-decoration: none;
             padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            background-color: #ffffff;
         }
-        input[type="text"] {
-            width: calc(100% - 80px);
+        #navbar a:hover {
+            background-color: #333;
+        }
+        #container {
+            display: flex;
+            height: 90vh;
+        }
+        #todo, #chat {
+            flex: 1;
+            border: 1px solid #333;
+            margin: 10px;
             padding: 10px;
-            margin-right: 10px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
+            background-color: #1e1e1e;
         }
-        button {
-            padding: 10px 20px;
+        #chat {
+            flex: 3; /* Increased size */
+            border: 1px solid #333;
+            margin: 10px;
+            padding: 10px;
+            background-color: #1e1e1e;
+        }
+        #messages {
+            height: 80%;
+            overflow-y: scroll;
+            border: 1px solid #333;
+            padding: 10px;
+            background-color: #1e1e1e;
+        }
+        #message-input {
+            flex: 1;
+            padding: 5px;
+            background-color: #333;
+            color: #e0e0e0;
+            border: 1px solid #555;
+        }
+        #send-button {
+            padding: 5px;
+            background-color: #1e88e5;
+            color: #fff;
             border: none;
-            background-color: #007bff;
-            color: white;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-        button:hover {
-            background-color: #0056b3;
+            font-size: 1.5em; /* Increased size for emoji */
         }
     </style>
 </head>
 <body>
-    <div id="container">
-        <div id="chat">
+    <div id="navbar">
+        <a href="#">Home</a>
+        <a href="#">Chat</a>
+        <a href="#">Settings</a>
+    </div>
+    <div id="container" style="display: flex; height: 90vh;">
+        {% include 'todolist.html' %}
+        <div id="chat" style="flex: 3; border: 1px solid black; margin: 10px; padding: 10px;">
             <h2>Chat</h2>
-            <div id="messages"></div>
-            <div>
-                <input type="text" id="userInput" placeholder="Type a message...">
-                <button onclick="sendMessage()">Send</button>
+            <div id="messages" style="height: 80%; overflow-y: scroll; border: 1px solid black; padding: 10px;">
+                {% if initial_response %}
+                    <div class="chat-bubble ai-response">{{ initial_response }}</div>
+                {% endif %}
+            </div>
+            <div style="display: flex; margin-top: 10px;">
+                <input type="text" id="message-input" placeholder="Type your message here..." style="flex: 1; padding: 5px;">
+                <button id="send-button" style="padding: 5px;">📧</button> <!-- Changed to email emoji -->
             </div>
         </div>
-        <div id="todo">
-            <h2>To-Do List</h2>
-            <form id="todo-form">
-                <input type="text" id="user-input" placeholder="Enter your request">
-                <button type="submit">Submit</button>
-            </form>
-            <ul id="todo-list"></ul>
-        </div>
     </div>
+    <div class="chat-container" id="chat-container"></div>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     <script>
-        function sendMessage() {
-            const userInput = document.getElementById('userInput').value;
+        $(document).ready(function() {
+            $('#send-button').click(function() {
+                var message = $('#message-input').val();
+                if (message.trim() === "") {
+                    alert("Message cannot be empty");
+                    return;
+                }
+
+                // Display user message immediately
+                $('#messages').append('<div class="chat-bubble user-message">' + message + '</div>');
+                $('#message-input').val('');
+
+                // Delay the API request by 1 second
+                setTimeout(function() {
+                    $.ajax({
+                        url: '/chat',
+                        method: 'POST',
+                        contentType: 'application/json',
+                        data: JSON.stringify({ message: message }),
+                        success: function(response) {
+                            if (response.error) {
+                                alert(response.error);
+                            } else if (response.todo_list) {
+                                $('#messages').append('<div>To-Do List:</div>');
+                                response.todo_list.forEach(function(task) {
+                                    $('#messages').append('<div>' + task.task + '</div>');
+                                });
+                            } else {
+                                $('#messages').append('<div class="chat-bubble ai-response">' + response.response + '</div>');
+                            }
+                        },
+                        error: function(xhr, status, error) {
+                            alert("An error occurred: " + error);
+                        }
+                    });
+                }, 1000);
+            });
+
+            $('#message-input').keypress(function(e) {
+                if (e.which == 13) { // Enter key pressed
+                    $('#send-button').click();
+                }
+            });
+        });
+
+        document.addEventListener('DOMContentLoaded', function() {
+            sendMessage(initialPrompt, true);
+        });
+
+        function sendMessage(userInput, isInitial = false) {
             if (!userInput) return;
-            addMessage('user', userInput);
+            if (!isInitial) addMessage('user', userInput);
             fetch('/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -114,6 +173,7 @@
             })
             .then(response => response.json())
             .then(data => {
+                console.log('API response:', data); // Debugging log
                 if (data.todo_list) {
                     updateTodoList(data.todo_list);
                 } else if (data.response) {
@@ -121,15 +181,19 @@
                 } else if (data.error) {
                     addMessage('error', data.error);
                 }
+            })
+            .catch(error => {
+                console.error('Error:', error); // Debugging log
+                addMessage('error', 'An error occurred while communicating with the server.');
             });
-            document.getElementById('userInput').value = '';
+            if (!isInitial) document.getElementById('message-input').value = '';
         }
 
         function addMessage(sender, message) {
             const messages = document.getElementById('messages');
             const messageDiv = document.createElement('div');
             messageDiv.className = `message ${sender}`;
-            messageDiv.textContent = message;
+            messageDiv.innerHTML = message;
             messages.appendChild(messageDiv);
             messages.scrollTop = messages.scrollHeight;
         }
@@ -143,28 +207,44 @@
                 checkbox.type = 'checkbox';
                 checkbox.checked = item.completed;
                 li.appendChild(checkbox);
-                li.appendChild(document.createTextNode(item.task));
+                li.innerHTML += item.task;
                 todoListElement.appendChild(li);
             });
         }
 
-        document.getElementById('todo-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const userInput = document.getElementById('user-input').value;
-            const response = await fetch('/chat', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ message: userInput })
-            });
-            const data = await response.json();
-            if (data.todo_list) {
-                updateTodoList(data.todo_list);
-            } else if (data.error) {
-                alert(data.error);
-            }
+        document.querySelector('form').addEventListener('submit', async function(event) {
+            event.preventDefault();
+            const messageInput = document.querySelector('input[name="message"]');
+            const userMessage = messageInput.value;
+            const chatContainer = document.getElementById('chat-container');
+
+            // Display user message
+            const userBubble = document.createElement('div');
+            userBubble.className = 'chat-bubble user-message';
+            userBubble.textContent = userMessage;
+            chatContainer.appendChild(userBubble);
+
+            // Delay the API request by 1 second
+            setTimeout(async function() {
+                const response = await fetch('/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ message: userMessage })
+                });
+                const data = await response.json();
+
+                // Display AI response
+                const aiBubble = document.createElement('div');
+                aiBubble.className = 'chat-bubble ai-response';
+                aiBubble.innerHTML = data.response || data.error;
+                chatContainer.appendChild(aiBubble);
+            }, 1000);
+
+            messageInput.value = '';
         });
     </script>
+    <script src="{{ url_for('static', filename='js/chat.js') }}"></script>
 </body>
 </html>

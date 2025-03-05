@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Loading - SmartTaskAI</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #121212;
+            color: #e0e0e0;
+            font-family: Arial, sans-serif;
+        }
+        .loading-container {
+            text-align: center;
+        }
+        .loading-title {
+            font-size: 3em;
+            margin-bottom: 20px;
+            border-right: .15em solid #e0e0e0;
+            white-space: nowrap;
+            overflow: hidden;
+        }
+        .loader {
+            border: 16px solid #333;
+            border-top: 16px solid #1e88e5;
+            border-radius: 50%;
+            width: 120px;
+            height: 120px;
+            animation: spin 2s linear infinite;
+            margin: 0 auto;
+        }
+        .hidden {
+            display: none;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        @keyframes typing {
+            from { width: 0 }
+            to { width: 100% }
+        }
+        @keyframes blink-caret {
+            from, to { border-color: transparent }
+            50% { border-color: #e0e0e0; }
+        }
+        .typewriter {
+            animation: typing 3.5s steps(40, end), blink-caret .75s step-end infinite;
+        }
+    </style>
+</head>
+<body>
+    <div class="loading-container">
+        <div class="loading-title typewriter" id="loading-title">SmartTaskAI</div>
+        <div class="loader" id="loader"></div>
+        <div class="happy-emoji hidden" id="happy-emoji">😊</div>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(function() {
+                document.getElementById('loader').classList.add('hidden');
+                document.getElementById('happy-emoji').classList.remove('hidden');
+                document.getElementById('loading-title').textContent = "Here to assist you!";
+                setTimeout(function() {
+                    window.location.href = '/main';
+                }, 1000); // Wait 1 second before redirecting
+            }, 3000); // Adjust the duration as needed
+        });
+    </script>
+</body>
+</html>
