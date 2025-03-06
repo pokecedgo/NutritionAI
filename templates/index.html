@@ -52,12 +52,45 @@
             display: flex;
             height: 90vh;
         }
-        #todo, #chat {
+        #todo {
             flex: 1;
             border: 1px solid #333;
             margin: 10px;
             padding: 10px;
             background-color: #1e1e1e;
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+        }
+        #todo-list {
+            flex: 1;
+            overflow-y: auto;
+            margin-bottom: 10px;
+        }
+        #todo-list li {
+            list-style-type: none; /* Remove bullet points */
+            font-size: 2em; /* Increase text size */
+        }
+        #new-task {
+            display: flex;
+            align-items: center;
+        }
+        #new-task input {
+            flex: 1;
+            padding: 5px;
+            background-color: #333;
+            color: #e0e0e0;
+            border: 1px solid #555;
+            border-radius: 5px;
+        }
+        #add-task-button {
+            padding: 5px 10px;
+            background-color: #1e88e5;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            margin-left: 5px;
+            cursor: pointer;
         }
         #chat {
             flex: 3; /* Increased size */
@@ -65,6 +98,7 @@
             margin: 10px;
             padding: 10px;
             background-color: #1e1e1e;
+            border-radius: 10px; /* Rounded corners for chat box */
         }
         #messages {
             height: 80%;
@@ -72,6 +106,7 @@
             border: 1px solid #333;
             padding: 10px;
             background-color: #1e1e1e;
+            border-radius: 10px; /* Rounded corners for messages box */
         }
         #message-input {
             flex: 1;
@@ -87,22 +122,47 @@
             border: none;
             font-size: 1.5em; /* Increased size for emoji */
         }
+        /* Add styles for the loading animation */
+        .loading {
+            display: none;
+            font-size: 24px;
+        }
+        .loading span {
+            animation: blink 1.4s infinite both;
+        }
+        .loading span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+        .loading span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+        @keyframes blink {
+            0% {
+                opacity: 0.2;
+            }
+            20% {
+                opacity: 1;
+            }
+            100% {
+                opacity: 0.2;
+            }
+        }
     </style>
 </head>
 <body>
-    <div id="navbar">
-        <a href="#">Home</a>
-        <a href="#">Chat</a>
-        <a href="#">Settings</a>
-    </div>
     <div id="container" style="display: flex; height: 90vh;">
-        {% include 'todolist.html' %}
+        <div id="todo">
+            <h2>To-Do List</h2>
+            <ul id="todo-list"></ul>
+            <div id="new-task">
+                <input type="text" id="new-task-input" placeholder="Add a new task...">
+                <button id="add-task-button">+</button>
+            </div>
+        </div>
         <div id="chat" style="flex: 3; border: 1px solid black; margin: 10px; padding: 10px;">
             <h2>Chat</h2>
             <div id="messages" style="height: 80%; overflow-y: scroll; border: 1px solid black; padding: 10px;">
-                {% if initial_response %}
-                    <div class="chat-bubble ai-response">{{ initial_response }}</div>
-                {% endif %}
+                <div id="initial-response" class="chat-bubble ai-response"></div>
             </div>
             <div style="display: flex; margin-top: 10px;">
                 <input type="text" id="message-input" placeholder="Type your message here..." style="flex: 1; padding: 5px;">
@@ -110,46 +170,50 @@
             </div>
         </div>
     </div>
-    <div class="chat-container" id="chat-container"></div>
+    <div class="chat-container" id="chat-container">
+        <div id="loading" class="loading">
+            <span>.</span><span>.</span><span>.</span>
+        </div>
+    </div>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     <script>
         $(document).ready(function() {
+            // Load the initial response from localStorage
+            const initialResponse = localStorage.getItem('initial_response');
+            if (initialResponse) {
+                $('#initial-response').text(initialResponse);
+                localStorage.removeItem('initial_response');
+            }
+
             $('#send-button').click(function() {
                 var message = $('#message-input').val();
-                if (message.trim() === "") {
-                    alert("Message cannot be empty");
-                    return;
-                }
 
                 // Display user message immediately
                 $('#messages').append('<div class="chat-bubble user-message">' + message + '</div>');
                 $('#message-input').val('');
 
-                // Delay the API request by 1 second
-                setTimeout(function() {
-                    $.ajax({
-                        url: '/chat',
-                        method: 'POST',
-                        contentType: 'application/json',
-                        data: JSON.stringify({ message: message }),
-                        success: function(response) {
-                            if (response.error) {
-                                alert(response.error);
-                            } else if (response.todo_list) {
-                                $('#messages').append('<div>To-Do List:</div>');
-                                response.todo_list.forEach(function(task) {
-                                    $('#messages').append('<div>' + task.task + '</div>');
-                                });
-                            } else {
-                                $('#messages').append('<div class="chat-bubble ai-response">' + response.response + '</div>');
-                            }
-                        },
-                        error: function(xhr, status, error) {
-                            alert("An error occurred: " + error);
+                $.ajax({
+                    url: '/chat',
+                    method: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({ message: message }),
+                    success: function(response) {
+                        if (response.error) {
+                            alert(response.error);
+                        } else if (response.todo_list) {
+                            $('#messages').append('<div>To-Do List:</div>');
+                            response.todo_list.forEach(function(task) {
+                                $('#messages').append('<div>' + task.task + '</div>');
+                            });
+                        } else {
+                            $('#messages').append('<div class="chat-bubble ai-response">' + response.response + '</div>');
                         }
-                    });
-                }, 1000);
+                    },
+                    error: function(xhr, status, error) {
+                        alert("An error occurred: " + error);
+                    }
+                });
             });
 
             $('#message-input').keypress(function(e) {
@@ -157,7 +221,31 @@
                     $('#send-button').click();
                 }
             });
+
+            $('#add-task-button').click(function() {
+                var newTask = $('#new-task-input').val();
+                if (newTask.trim() !== "") {
+                    addTaskToList(newTask);
+                    $('#new-task-input').val('');
+                }
+            });
+
+            $('#new-task-input').keypress(function(e) {
+                if (e.which == 13) {
+                    $('#add-task-button').click();
+                }
+            });
         });
+
+        function addTaskToList(task) {
+            const todoListElement = document.getElementById('todo-list');
+            const li = document.createElement('li');
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            li.appendChild(checkbox);
+            li.innerHTML += task;
+            todoListElement.appendChild(li);
+        }
 
         document.addEventListener('DOMContentLoaded', function() {
             sendMessage(initialPrompt, true);
@@ -166,6 +254,7 @@
         function sendMessage(userInput, isInitial = false) {
             if (!userInput) return;
             if (!isInitial) addMessage('user', userInput);
+            showLoading();
             fetch('/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -185,6 +274,9 @@
             .catch(error => {
                 console.error('Error:', error); // Debugging log
                 addMessage('error', 'An error occurred while communicating with the server.');
+            })
+            .finally(() => {
+                hideLoading();
             });
             if (!isInitial) document.getElementById('message-input').value = '';
         }
@@ -224,26 +316,32 @@
             userBubble.textContent = userMessage;
             chatContainer.appendChild(userBubble);
 
-            // Delay the API request by 1 second
-            setTimeout(async function() {
-                const response = await fetch('/chat', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ message: userMessage })
-                });
-                const data = await response.json();
+            const response = await fetch('/chat', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ message: userMessage })
+            });
+            const data = await response.json();
 
-                // Display AI response
-                const aiBubble = document.createElement('div');
-                aiBubble.className = 'chat-bubble ai-response';
-                aiBubble.innerHTML = data.response || data.error;
-                chatContainer.appendChild(aiBubble);
-            }, 1000);
+            // Display AI response
+            const aiBubble = document.createElement('div');
+            aiBubble.className = 'chat-bubble ai-response';
+            aiBubble.innerHTML = data.response || data.error;
+            chatContainer.appendChild(aiBubble);
 
             messageInput.value = '';
         });
+
+        // JavaScript to handle showing and hiding the loading animation
+        function showLoading() {
+            document.getElementById('loading').style.display = 'inline';
+        }
+
+        function hideLoading() {
+            document.getElementById('loading').style.display = 'none';
+        }
     </script>
     <script src="{{ url_for('static', filename='js/chat.js') }}"></script>
 </body>

@@ -11,7 +11,7 @@ if not GOOGLE_API_KEY:
 # Configure the API key
 genai.configure(api_key=GOOGLE_API_KEY)
 
-MODEL_NAME = "gemini-2.0-flash"  
+MODEL_NAME = "gemini-2.0-flash-exp"  
 
 # Initialize the Generative Model
 model = genai.GenerativeModel(MODEL_NAME)
